@@ -6,6 +6,7 @@ class Brain {
     this.health = 20;
     this.isRunningAway = false;
     this.direction = 'forward';
+    this.target = null;
   }
 
   think(warrior) {
@@ -14,6 +15,8 @@ class Brain {
 
     // Look at your surroundings
     this.lookAtSurroundings();
+
+    this.checkForRangedThreats();
 
     // test if we should change our direction
     if (this.shouldChangeDirection()) {
@@ -202,12 +205,36 @@ class Brain {
   }
 
   /**
+   * Check
+   *
+   * {
+   *  "character": "S",
+   *  "stairs": false,
+   *  "unit": {
+   *    "name": "Thick Sludge",
+   *    "character": "S",
+   *    "maxHealth": 24,
+   *    "health": 24
+   *    }
+   *  }
+   *
+   */
+  checkForRangedThreats() {
+
+    const possibleEnemies = DIRECTIONS.map((direction) => this.warrior.look(direction).find((space) => space.isEnemy()));
+
+//    const hasArcher = possibleEnemies.findIndex((unit) => unit.name === 'Archer');
+
+  }
+
+
+  /**
    * I was attacked but no enemy was near
    * start moving in the opposite direction
    * @param warrior
    */
   shouldEvadeAttack() {
-    if (!this.isRunningAway && this.wasAttackedLastTurn() && this.warrior.health() <= 16 && !this.adjacentToEnemy(this.warrior)) {
+    if (!this.isRunningAway && this.wasAttackedLastTurn() && this.warrior.health() <= 13 ) {//&& !this.adjacentToEnemy(this.warrior)) {
       this.reverseDirection();
       this.isRunningAway = true;
       this.warrior.walk(this.direction);
@@ -228,7 +255,11 @@ class Brain {
    * @returns {Array}
    */
   adjacentToEnemy(warrior) {
-    return DIRECTIONS.some((direction) => warrior.feel(direction).isEnemy());
+    const isAdjacent = DIRECTIONS.some((direction) => warrior.feel(direction).isEnemy());
+
+    this.warrior.think(isAdjacent);
+
+    return isAdjacent;
   }
 
   /**
