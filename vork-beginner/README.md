@@ -1,22 +1,24 @@
-## vork - beginner - level 6
+## vork - beginner - level 9
 
-### _The wall behind you feels a bit further away in this room. And you hear more cries for help._
+### _Time to hone your skills and apply all of the abilities that you've learned._
 
-> **TIP:** You can walk backward by passing `'backward'` as an argument to `walk()`. Same goes for `feel()`, `rescue()` and `attack()`. Archers have a limited attack distance.
+> **TIP:** Watch your back.
 
-> **CLUE:** Walk backward if you're taking damage from afar and don't have enough health to attack. You may also want to consider walking backward until you hit a wall. Use `warrior.feel().isWall()` to see if there's a wall.
+> **CLUE:** Don't just keep shooting the bow while you're being attacked from behind.
 
 ### Floor Map
 
 ```
-╔════════╗
-║C @ S aa║
-╚════════╝
+╔═══════════╗
+║>Ca  @ S wC║
+╚═══════════╝
 
+> = stairs
 C = Captive (1 HP)
+a = Archer (7 HP)
 @ = vork (20 HP)
 S = Thick Sludge (24 HP)
-a = Archer (7 HP)
+w = Wizard (3 HP)
 ```
 
 ### Abilities
@@ -27,11 +29,15 @@ a = Archer (7 HP)
 * `warrior.attack()`: Attack a unit in the given direction (forward by default) dealing 5 HP of damage.
 * `warrior.rest()`: Gain 10% of max health back, but do nothing more.
 * `warrior.rescue()`: Rescue a captive from his chains (earning a reward) in the given direction (forward by default).
+* `warrior.pivot()`: Rotate in the given direction (backward by default).
+* `warrior.shoot()`: Shoot your bow & arrow in the given direction (forward by default) dealing 3 HP of damage to the first unit in a range of 3 spaces.
 
 #### Senses
 
+* `warrior.think()`: Think about your options before choosing an action.
 * `warrior.feel()`: Return the adjacent space in the given direction (forward by default).
 * `warrior.health()`: Return an integer representing your health.
+* `warrior.look()`: Returns an array of up to 3 spaces in the given direction (forward by default).
 
 ### Next Steps
 

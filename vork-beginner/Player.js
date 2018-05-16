@@ -1,57 +1,109 @@
 
 const DIRECTIONS = ['forward', 'right', 'backward', 'left'];
 
-class Player {
-
+class Brain {
   constructor() {
-    this.health = 22;
+    this.health = 20;
     this.isRunningAway = false;
-    this.direction = 'backward';
+    this.direction = 'forward';
   }
 
-  playTurn(warrior) {
+  think(warrior) {
 
-    //if(warrior.feel(this.direction).isWall()) {
-      //this.turnLeft();
-      //this.turnOpposite();
-      //
-      // this.direction = 'forward';
-    //}
+    this.warrior = warrior;
 
+    // Look at your surroundings
+    this.lookAtSurroundings();
+
+    // test if we should change our direction
+    if (this.shouldChangeDirection()) {
+      
+    }
+    
     // Check if we need to evade ranged attacks until healed
-    if (this.shouldEvadeAttack(warrior)) {
+    else if (this.shouldEvadeAttack()) {
 
     }
 
     // should warrior take a rest
-    else if (this.shouldTakeARest(warrior)) {
+    else if (this.shouldTakeARest()) {
+
+    }
+
+    // check for anamy at range and attack
+    else if (this.checkForEnemyAtRangeAndAttack()) {
 
     }
 
     // rescue captives
-    else if (this.rescueCaptive(warrior)) {
+    else if (this.rescueCaptive()) {
 
     }
 
     // attack nearby enemies
-    else if (this.attackEnemy(warrior)) {
+    else if (this.attackEnemy()) {
 
     }
 
     // find your exit
     else {
-      this.moveToStairs(warrior)
+      this.moveToStairs()
     }
 
-    this.storeState(warrior);
-
-    // test if we should change our direction
-    this.shouldChangeDirection(warrior);
+    this.storeState();
 
   }
 
-  storeState(warrior) {
-    this.health = warrior.health();
+  /**
+   * Look and record your surroundings
+   */
+  lookAtSurroundings() {
+
+  }
+
+  /**
+   * Check for friendly Units in the line of fire
+   * @returns {boolean}
+   */
+  hasFriendlyInLineOfFire() {
+
+    const friendly = this.warrior.look(this.direction).find(space => space.isCaptive());
+    const friendlyPos = this.warrior.look(this.direction).findIndex(space => space.isCaptive());
+
+    const enemy = this.warrior.look(this.direction).find(space => space.isEnemy());
+    const enemyPos = this.warrior.look(this.direction).findIndex(space => space.isEnemy());
+
+    //this.warrior.think(`I looked ${this.direction} and found ${enemy} and ${friendly} at ${enemyPos} and ${friendlyPos}`);
+
+    // if we have a friend in the line of fire
+    if (friendly && enemy && friendlyPos < enemyPos) return true;
+
+    return false;
+  }
+
+  /**
+   *
+   */
+  checkForEnemyAtRangeAndAttack() {
+
+    if (this.hasFriendlyInLineOfFire()) return false;
+
+    // get remaining enemy
+    const enemy = this.warrior.look(this.direction).find((space) => space.isEnemy());
+
+    if (enemy) {
+      this.warrior.shoot(this.direction);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Store turn state
+   * @param warrior
+   */
+  storeState() {
+    this.health = this.warrior.health();
   }
 
   /**
@@ -59,38 +111,44 @@ class Player {
    *
    * @param warrior
    */
-  shouldChangeDirection(warrior) {
-      if (warrior.feel(this.direction).isWall()) {
-       this.turnLeft();
-        //this.shouldChangeDirection(warrior);
-      }
+  shouldChangeDirection() {
+    // hitting a wall we need to turn
+    if (this.warrior.feel(this.direction).isWall()) {
+      return this.turnLeft();
+    }
+
+    return false;
   }
 
   /**
-   * Allways turn left
+   * Always turn left
    */
   turnLeft() {
     switch(this.direction) {
       case 'backward':
-        return this.direction = 'left';
+        this.direction = 'left';
         break;
       case 'left':
-        return this.direction = 'forward';
+        this.direction = 'forward';
         break;
       case 'forward':
-        return this.direction = 'right';
+        this.direction = 'right';
         break;
       case 'right':
-        return this.direction = 'backward';
+        this.direction = 'backward';
         break;
     }
+    
+    // pivot to this direction
+    this.warrior.pivot(this.direction);
+    
     return true;
   }
 
   /**
    * Run forest Run
    */
-  turnOpposite() {
+  reverseDirection() {
     switch(this.direction) {
       case 'backward':
         this.direction = 'forward';
@@ -104,6 +162,8 @@ class Player {
       case 'right':
         this.direction = 'left';
     }
+
+    return true;
   }
 
   /**
@@ -111,19 +171,19 @@ class Player {
    *
    * @param warrior
    */
-  moveToStairs(warrior) {
-    warrior.walk(this.direction);
+  moveToStairs() {
+    this.warrior.walk(this.direction);
 
     return true;
   }
 
   /**
-   * Attack anamy if present
+   * Attack enemy if present
    * @param warrior
    */
-  attackEnemy(warrior) {
-    if (warrior.feel(this.direction).isEnemy()) {
-      warrior.attack(this.direction);
+  attackEnemy() {
+    if (this.warrior.feel(this.direction).isEnemy()) {
+      this.warrior.attack(this.direction);
       return true;
     }
     return false;
@@ -133,9 +193,9 @@ class Player {
    * Rescue a captive
    * @param warrior
    */
-  rescueCaptive(warrior) {
-    if (warrior.feel(this.direction).isCaptive()) {
-      warrior.rescue(this.direction);
+  rescueCaptive() {
+    if (this.warrior.feel(this.direction).isCaptive()) {
+      this.warrior.rescue(this.direction);
       return true;
     }
     return false;
@@ -146,28 +206,19 @@ class Player {
    * start moving in the opposite direction
    * @param warrior
    */
-  shouldEvadeAttack(warrior) {
-    if (!this.isRunningAway && this.wasAttackedLastTurn(warrior) && warrior.health() <= 10 && !this.adjacentToEnemy(warrior)) {
-
-      this.turnOpposite();
-
+  shouldEvadeAttack() {
+    if (!this.isRunningAway && this.wasAttackedLastTurn() && this.warrior.health() <= 16 && !this.adjacentToEnemy(this.warrior)) {
+      this.reverseDirection();
       this.isRunningAway = true;
-
-      warrior.walk(this.direction);
-
+      this.warrior.walk(this.direction);
       return true;
     }
-
     // We can stop running and turn the opposite way again
     else if (this.isRunningAway && !this.wasAttackedLastTurn()) {
-
-      this.turnOpposite();
-
+      this.reverseDirection();
       this.isRunningAway = false;
-
       return true;
     }
-
     return false;
   }
 
@@ -186,8 +237,8 @@ class Player {
    * @returns {boolean|*}
    */
   shouldTakeARest(warrior) {
-    if (!this.wasAttackedLastTurn(warrior) && this.isInjured(warrior) && !warrior.feel(this.direction).isEnemy()) {
-      warrior.rest();
+    if (!this.wasAttackedLastTurn() && this.isInjured() && !this.warrior.feel(this.direction).isEnemy()) {
+      this.warrior.rest();
       return true;
     }
     return false;
@@ -198,8 +249,8 @@ class Player {
    * @param warrior
    * @returns {boolean}
    */
-  isInjured(warrior) {
-    return warrior.health() < 20;
+  isInjured() {
+    return this.warrior.health() < 20;
   }
 
   /**
@@ -207,7 +258,19 @@ class Player {
    * @param warrior
    * @returns {boolean}
    */
-  wasAttackedLastTurn(warrior) {
-    return warrior.health() < this.health;
+  wasAttackedLastTurn() {
+    return this.warrior.health() < this.health;
+  }
+}
+
+class Player {
+
+  constructor() {
+    // create single instance of brain
+    if (!this.brain) this.brain = new Brain();
+  }
+
+  playTurn(warrior) {
+    this.brain.think(warrior);
   }
 }
