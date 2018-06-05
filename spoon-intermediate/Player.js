@@ -24,12 +24,22 @@ class Brain {
     if (this.shouldTakeARest()) {
       this.warrior.think('Taking a rest');
     }
+    else if (this.shouldBind()) {
+      this.warrior.think('Getting out the ropes.');
+    }
+    else if (this.rescueCaptive()) {
+      this.warrior.think('cutting the bonds.');
+    }
     else if (this.shouldRunAway()) {
       this.warrior.think('I need to run away');
     }
     else if (this.isAdjacentToEnemy()) {
       this.attackEnemy();
       this.warrior.think('It\'s clobbering time!');
+    }
+    else if (this.isAdjacentToBoundEnemy()) {
+      this.attackBoundEnemy();
+      this.warrior.think('It\'s backstabbing time!');
     }
     else {
       this.walkToStairs();
@@ -63,13 +73,53 @@ class Brain {
 
   /**
    *
+   */
+  shouldBind() {
+    const enemy = this.getEnemies().shift();
+    if (enemy) {
+      this.warrior.bind(enemy.direction);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   *
+   */
+  rescueCaptive() {
+    const captive = this.getCaptives().shift();
+    if (captive) {
+      this.warrior.rescue(captive.direction);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+
+
+  /**
+   *
    * @param warrior
    * @returns {Array}
    */
   isAdjacentToEnemy() {
     return DIRECTIONS.some((direction) => {
       const unit = this.warrior.feel(direction).getUnit();
-      return unit && unit.isHostile();
+      return unit && (unit.isHostile());
+    });
+  }
+
+  /**
+   *
+   * @param warrior
+   * @returns {Array}
+   */
+  isAdjacentToBoundEnemy() {
+    return DIRECTIONS.some((direction) => {
+      const unit = this.warrior.feel(direction).getUnit();
+      return unit && unit.isBound() && !unit.isFriendly();
     });
   }
 
@@ -86,11 +136,49 @@ class Brain {
   }
 
   /**
+   *
+   */
+  getBoundEnemies() {
+    return DIRECTIONS.map(direction => {
+      return {
+        direction,
+        unit: this.warrior.feel(direction).getUnit(),
+      };
+    }).filter(item => item.unit && item.unit.isBound() && !item.unit.isFriendly());
+  }
+
+  /**
+   * REturn if unit is captive
+   * @returns {Array.<*>}
+   */
+  getCaptives() {
+    return DIRECTIONS.map(direction => {
+      return {
+        direction,
+        unit: this.warrior.feel(direction).getUnit(),
+      };
+    }).filter(item => item.unit && item.unit.isBound() && item.unit.isFriendly());
+  }
+
+  /**
    * Attack enemy if present
    * @param warrior
    */
   attackEnemy() {
     const item = this.getEnemies().shift();
+    if (item.unit) {
+      this.warrior.attack(item.direction);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Attack enemy if present
+   * @param warrior
+   */
+  attackBoundEnemy() {
+    const item = this.getBoundEnemies().shift();
     if (item.unit) {
       this.warrior.attack(item.direction);
       return true;
