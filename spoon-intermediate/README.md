@@ -1,38 +1,41 @@
-## spoon - intermediate - level 2
+## spoon - intermediate - level 3
 
-### _Another large room, but with several enemies blocking your way to the stairs._
+### _You feel slime on all sides, you are surrounded!_
 
-> **TIP:** Just like walking, you can attack and feel in multiple directions (forward, left, right, backward).
+> **TIP:** Call `warrior.bind()` to bind an enemy to keep him from attacking. Bound enemies no longer look like enemies.
 
 
 ### Floor Map
 
 ```
-╔════╗
-║@s  ║
-║ sS>║
-╚════╝
+╔═══╗
+║>s ║
+║s@s║
+║ C ║
+╚═══╝
 
-@ = spoon (20 HP)
-s = Sludge (12 HP)
-S = Thick Sludge (24 HP)
 > = stairs
+s = Sludge (12 HP)
+@ = spoon (20 HP)
+C = Captive (1 HP)
 ```
 
 ### Abilities
 
 #### Actions (only one per turn)
 
+* `warrior.bind()`: Bind a unit in the given direction (forward by default) to keep him from moving.
+* `warrior.rescue()`: Release a unit from his chains in the given direction (forward by default).
+* `warrior.walk()`: Move one space in the given direction (forward by default).
 * `warrior.attack()`: Attack a unit in the given direction (forward by default) dealing 5 HP of damage.
 * `warrior.rest()`: Gain 10% of max health back, but do nothing more.
-* `warrior.walk()`: Move one space in the given direction (forward by default).
 
 #### Senses
 
-* `warrior.feel()`: Return the adjacent space in the given direction (forward by default).
-* `warrior.health()`: Return an integer representing your health.
 * `warrior.directionOfStairs()`: Return the direction (forward, right, backward or left) the stairs are from your location.
 * `warrior.think()`: Think about your options before choosing an action.
+* `warrior.feel()`: Return the adjacent space in the given direction (forward by default).
+* `warrior.health()`: Return an integer representing your health.
 
 ### Next Steps
 
