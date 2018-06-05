@@ -18,6 +18,10 @@ class Brain {
     this.isRunningAway = false;
   }
 
+  /**
+   *
+   * @param warrior
+   */
   process(warrior) {
     this.warrior = warrior;
 
@@ -34,12 +38,20 @@ class Brain {
       this.warrior.think('I need to run away');
     }
     else if (this.isAdjacentToEnemy()) {
-      this.attackEnemy();
       this.warrior.think('It\'s clobbering time!');
+      this.attackEnemy();
     }
     else if (this.isAdjacentToBoundEnemy()) {
-      this.attackBoundEnemy();
       this.warrior.think('It\'s backstabbing time!');
+      this.attackBoundEnemy();
+    }
+    else if (this.enemiesLeft()) {
+      this.warrior.think('hunter killer');
+      this.walkToEnemy();
+    }
+    else if (this.captivesLeft()) {
+      this.warrior.think('rescue rangers');
+      this.walkToCaptive();
     }
     else {
       this.walkToStairs();
@@ -48,13 +60,83 @@ class Brain {
     this.storeState();
   }
 
+  /**
+   * Store current state
+   */
   storeState() {
     this.health = this.warrior.health();
   }
 
+  /**
+   * Walk to exit
+   */
   walkToStairs() {
     this.direction = this.warrior.directionOfStairs();
     this.warrior.walk(this.direction);
+  }
+
+  /**
+   * Walk to remaining enemy
+   */
+  walkToEnemy() {
+    const enemy = this.warrior
+      .listen()
+      .filter(space => {
+        const unit = space.getUnit();
+        return (
+          unit && (unit.isHostile() || (unit.isBound() && !unit.isFriendly()))
+        );
+      })
+      .shift();
+
+    if (enemy) {
+      const direction = this.warrior.directionOf(enemy);
+      this.warrior.think(`walking ${direction} towards enemy.`);
+      this.warrior.walk(direction);
+    }
+  }
+
+  /**
+   * Walk to remaining captive
+   */
+  walkToCaptive() {
+    const captive = this.warrior
+      .listen()
+      .filter(space => {
+        const unit = space.getUnit();
+        return unit && (unit.isBound() && unit.isFriendly());
+      })
+      .shift();
+
+    if (captive) {
+      const direction = this.warrior.directionOf(captive);
+      this.warrior.think(`walking ${direction} towards captive.`);
+      this.warrior.walk(direction);
+    }
+  }
+
+  /**
+   * Are there enemies left
+   * @returns {boolean|*}
+   */
+  enemiesLeft() {
+    return this.warrior.listen().some(space => {
+      const unit = space.getUnit();
+      return (
+        unit && (unit.isHostile() || (unit.isBound() && !unit.isFriendly()))
+      );
+    });
+  }
+
+  /**
+   * Are there any captives left
+   * @returns {boolean|*}
+   */
+  captivesLeft() {
+    return this.warrior.listen().some(space => {
+      const unit = space.getUnit();
+      return unit && unit.isBound() && unit.isFriendly();
+    });
   }
 
   /**
@@ -107,7 +189,7 @@ class Brain {
   isAdjacentToEnemy() {
     return DIRECTIONS.some((direction) => {
       const unit = this.warrior.feel(direction).getUnit();
-      return unit && (unit.isHostile());
+      return unit && unit.isHostile();
     });
   }
 

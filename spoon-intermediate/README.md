@@ -1,24 +1,22 @@
-## spoon - intermediate - level 4
+## spoon - intermediate - level 5
 
-### _Your ears become more in tune with the surroundings. Listen to find enemies and captives!_
+### _You can feel the stairs right next to you, but are you sure you want to go up them right away?_
 
-> **TIP:** Use `warrior.listen()` to find spaces with other units, and `warrior.directionOf()` to determine what direction they're in.
+> **TIP:** You'll get more points for clearing the level first. Use `warrior.feel().isStairs()` and `warrior.feel().isEmpty()` to determine where to go.
 
 
 ### Floor Map
 
 ```
-╔════╗
-║C s ║
-║ @ S║
-║C s>║
-╚════╝
+╔═════╗
+║    S║
+║@> SC║
+╚═════╝
 
-C = Captive (1 HP)
-s = Sludge (12 HP)
-@ = spoon (20 HP)
 S = Thick Sludge (24 HP)
+@ = spoon (20 HP)
 > = stairs
+C = Captive (1 HP)
 ```
 
 ### Abilities
@@ -33,12 +31,12 @@ S = Thick Sludge (24 HP)
 
 #### Senses
 
-* `warrior.directionOf()`: Return the direction (forward, right, backward or left) to the given space.
-* `warrior.listen()`: Return an array of all spaces which have units in them (excluding yourself).
 * `warrior.directionOfStairs()`: Return the direction (forward, right, backward or left) the stairs are from your location.
 * `warrior.think()`: Think about your options before choosing an action.
 * `warrior.feel()`: Return the adjacent space in the given direction (forward by default).
 * `warrior.health()`: Return an integer representing your health.
+* `warrior.directionOf()`: Return the direction (forward, right, backward or left) to the given space.
+* `warrior.listen()`: Return an array of all spaces which have units in them (excluding yourself).
 
 ### Next Steps
 
