@@ -1,22 +1,25 @@
-## spoon - intermediate - level 5
+# spoon - intermediate
 
-### _You can feel the stairs right next to you, but are you sure you want to go up them right away?_
 
-> **TIP:** You'll get more points for clearing the level first. Use `warrior.feel().isStairs()` and `warrior.feel().isEmpty()` to determine where to go.
+## Level 6
+
+### _What's that ticking? Some captives have a timed bomb at their feet!_
+
+> **TIP:** Hurry and rescue captives that have `space.getUnit().isUnderEffect('ticking')` first, they'll soon go!
 
 
 ### Floor Map
 
 ```
-╔═════╗
-║    S║
-║@> SC║
-╚═════╝
+╔══════╗
+║Cs   >║
+║@  sC ║
+╚══════╝
 
-S = Thick Sludge (24 HP)
-@ = spoon (20 HP)
-> = stairs
 C = Captive (1 HP)
+s = Sludge (12 HP)
+> = stairs
+@ = spoon (20 HP)
 ```
 
 ### Abilities
@@ -32,7 +35,7 @@ C = Captive (1 HP)
 #### Senses
 
 * `warrior.directionOfStairs()`: Return the direction (forward, right, backward or left) the stairs are from your location.
-* `warrior.think()`: Think about your options before choosing an action.
+* `warrior.think()`: Think about your options before choosing an action (`console.log` replacement).
 * `warrior.feel()`: Return the adjacent space in the given direction (forward by default).
 * `warrior.health()`: Return an integer representing your health.
 * `warrior.directionOf()`: Return the direction (forward, right, backward or left) to the given space.

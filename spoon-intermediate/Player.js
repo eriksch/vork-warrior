@@ -1,15 +1,5 @@
 const DIRECTIONS = ['forward', 'right', 'backward', 'left'];
 
-class Player {
-
-  constructor() {
-    this.brain = new Brain();
-  }
-
-  playTurn(warrior) {
-    this.brain.process(warrior);
-  }
-}
 
 class Brain {
   constructor() {
@@ -28,10 +18,10 @@ class Brain {
     if (this.shouldTakeARest()) {
       this.warrior.think('Taking a rest');
     }
-    else if (this.shouldBind()) {
+    else if (this.shouldBindEnemy()) {
       this.warrior.think('Getting out the ropes.');
     }
-    else if (this.rescueCaptive()) {
+    else if (this.shouldRescueCaptive()) {
       this.warrior.think('cutting the bonds.');
     }
     else if (this.shouldRunAway()) {
@@ -84,16 +74,40 @@ class Brain {
       .filter(space => {
         const unit = space.getUnit();
         return (
-          unit && (unit.isHostile() || (unit.isBound() && !unit.isFriendly()))
+          space.isUnit() && (unit.isEnemy() || (unit.isBound() && unit.isEnemy()))
         );
       })
       .shift();
 
     if (enemy) {
       const direction = this.warrior.directionOf(enemy);
+
+      // are we walking into stairs then don't
+      if (this.warrior.feel(direction).isStairs()) {
+        return this.walkToEmptySpace();
+      }
       this.warrior.think(`walking ${direction} towards enemy.`);
+
       this.warrior.walk(direction);
     }
+
+    return true;
+  }
+
+  walkToEmptySpace() {
+    const direction = DIRECTIONS.find(dir => {
+      const space = this.warrior.feel(dir);
+      return space.isEmpty() && !space.isStairs();
+    });
+
+    if (direction) {
+      this.warrior.think(`walking ${direction} towards empty space.`);
+      this.warrior.walk(direction);
+      return true;
+    }
+    this.warrior.think(`no empty space ${direction}`);
+
+    return false;
   }
 
   /**
@@ -104,7 +118,7 @@ class Brain {
       .listen()
       .filter(space => {
         const unit = space.getUnit();
-        return unit && (unit.isBound() && unit.isFriendly());
+        return space.isUnit() && (unit.isBound() && !unit.isEnemy());
       })
       .shift();
 
@@ -116,16 +130,21 @@ class Brain {
   }
 
   /**
+   * Return list of all units
+   */
+  listenForAllUnits() {
+    return this.warrior
+      .listen()
+      .filter(space => space.isUnit())
+      .map(space => space.getUnit());
+  }
+
+  /**
    * Are there enemies left
    * @returns {boolean|*}
    */
   enemiesLeft() {
-    return this.warrior.listen().some(space => {
-      const unit = space.getUnit();
-      return (
-        unit && (unit.isHostile() || (unit.isBound() && !unit.isFriendly()))
-      );
-    });
+    return this.listenForAllUnits().some(unit => unit.isEnemy());
   }
 
   /**
@@ -133,10 +152,7 @@ class Brain {
    * @returns {boolean|*}
    */
   captivesLeft() {
-    return this.warrior.listen().some(space => {
-      const unit = space.getUnit();
-      return unit && unit.isBound() && unit.isFriendly();
-    });
+    return this.listenForAllUnits().some(unit => (unit.isBound() && !unit.isEnemy()));
   }
 
   /**
@@ -154,11 +170,11 @@ class Brain {
   }
 
   /**
-   *
+   * Should i attempt to bind and unbound enemy?
    */
-  shouldBind() {
-    const enemy = this.getEnemies().shift();
-    if (enemy) {
+  shouldBindEnemy() {
+    const enemy = this.getUnboundEnemies().shift();
+    if (enemy && enemy.unit) {
       this.warrior.bind(enemy.direction);
       return true;
     } else {
@@ -169,9 +185,9 @@ class Brain {
   /**
    *
    */
-  rescueCaptive() {
+  shouldRescueCaptive() {
     const captive = this.getCaptives().shift();
-    if (captive) {
+    if (captive && captive.unit) {
       this.warrior.rescue(captive.direction);
       return true;
     } else {
@@ -179,67 +195,69 @@ class Brain {
     }
   }
 
-
-
   /**
-   *
-   * @param warrior
-   * @returns {Array}
+   * Standing next to unbound enemy?
+   * @returns {boolean}
    */
   isAdjacentToEnemy() {
-    return DIRECTIONS.some((direction) => {
-      const unit = this.warrior.feel(direction).getUnit();
-      return unit && unit.isHostile();
-    });
+    return this.getUnboundEnemies().length > 0;
   }
 
   /**
-   *
-   * @param warrior
-   * @returns {Array}
+   * Standing next to bound enemy?
+   * @returns {boolean}
    */
   isAdjacentToBoundEnemy() {
-    return DIRECTIONS.some((direction) => {
-      const unit = this.warrior.feel(direction).getUnit();
-      return unit && unit.isBound() && !unit.isFriendly();
+    return this.getBoundEnemies().length > 0;
+  }
+
+  /**
+   * Gets units in all four directions
+   * @returns {Array}
+   */
+  getUnits() {
+    return DIRECTIONS.map(direction => {
+      return {
+        direction,
+        unit: this.warrior.feel(direction).getUnit(),
+      };
     });
   }
 
   /**
-   *
+   * Return all enemies
+   * @returns {Array.<*>}
    */
   getEnemies() {
-    return DIRECTIONS.map(direction => {
-      return {
-        direction,
-        unit: this.warrior.feel(direction).getUnit(),
-      };
-    }).filter(item => item.unit && item.unit.isHostile());
+    return this.getUnits()
+      .filter(item => item.unit && item.unit.isEnemy());
   }
 
   /**
-   *
+   * Return any bound enemies
+   * @returns {Array.<*>}
    */
   getBoundEnemies() {
-    return DIRECTIONS.map(direction => {
-      return {
-        direction,
-        unit: this.warrior.feel(direction).getUnit(),
-      };
-    }).filter(item => item.unit && item.unit.isBound() && !item.unit.isFriendly());
+    return this.getUnits()
+      .filter(item => item.unit && item.unit.isBound() && item.unit.isEnemy());
   }
 
   /**
-   * REturn if unit is captive
+   * Return any unbound enemies
+   * @returns {Array.<*>}
+   */
+  getUnboundEnemies() {
+    return this.getUnits()
+      .filter(item => item.unit && !item.unit.isBound() && item.unit.isEnemy());
+  }
+
+  /**
+   * Return if unit is captive
    * @returns {Array.<*>}
    */
   getCaptives() {
-    return DIRECTIONS.map(direction => {
-      return {
-        direction,
-        unit: this.warrior.feel(direction).getUnit(),
-      };
-    }).filter(item => item.unit && item.unit.isBound() && item.unit.isFriendly());
+    return this.getUnits()
+      .filter(item => item.unit && item.unit.isBound() && !item.unit.isEnemy());
   }
 
   /**
@@ -248,7 +266,7 @@ class Brain {
    */
   attackEnemy() {
     const item = this.getEnemies().shift();
-    if (item.unit) {
+    if (item && item.unit) {
       this.warrior.attack(item.direction);
       return true;
     }
@@ -261,7 +279,7 @@ class Brain {
    */
   attackBoundEnemy() {
     const item = this.getBoundEnemies().shift();
-    if (item.unit) {
+    if (item && item.unit) {
       this.warrior.attack(item.direction);
       return true;
     }
@@ -320,7 +338,7 @@ class Brain {
    * @param warrior
    */
   shouldRunAway() {
-    if (!this.isRunningAway && this.wasAttackedLastTurn() && this.warrior.health() <= 13 ) {//&& !this.adjacentToEnemy(this.warrior)) {
+    if (!this.isRunningAway && this.wasAttackedLastTurn() && this.warrior.health() <= 13 ) {
       this.reverseDirection();
       this.isRunningAway = true;
       this.warrior.walk(this.direction);
@@ -336,22 +354,15 @@ class Brain {
   }
 
   /**
-   * Get direction to run away to
-   */
-  directionAwayFromHostile() {
-    // default direction is forward (0)
-    this.unitsInAllDirections().reduce((acc, unit, index) => {
-        return unit && unit.isHostile() ? acc + index : acc;
-      },
-      0);
-  }
-
-  /**
    * Warrior is not under attack, has been injured and is not in front of an enemy
    * @returns {boolean|*}
    */
   shouldTakeARest() {
-    if (!this.wasAttackedLastTurn() && this.isInjured() && !this.isInRangeOfHostiles()) {
+    if (
+      this.needsHealing() &&
+      !this.wasAttackedLastTurn() &&
+      !this.isInRangeOfHostiles()
+    ) {
       this.warrior.rest();
       return true;
     }
@@ -359,23 +370,12 @@ class Brain {
   }
 
   /**
-   * Gets units in all directions
-   * @returns {Array}
-   */
-  unitsInAllDirections() {
-    return DIRECTIONS.map(direction => {
-      return this.warrior.feel(direction).getUnit();
-    });
-  }
-
-  /**
    * Check if any of the units in range is hostile
    * @returns {boolean|*}
    */
   isInRangeOfHostiles() {
-    return this.unitsInAllDirections().some(unit => unit && unit.isHostile());
+    return this.getUnboundEnemies().length > 0;
   }
-
 
   /**
    * Check if warrior has been injured
@@ -386,10 +386,29 @@ class Brain {
   }
 
   /**
+   * Check if we need healing
+   * @returns {boolean}
+   */
+  needsHealing() {
+    return this.warrior.health() < 10;
+  }
+
+  /**
    * Check if a attack has happened since last turn.
    * @returns {boolean}
    */
   wasAttackedLastTurn() {
     return this.warrior.health() < this.health;
+  }
+}
+
+class Player {
+
+  constructor() {
+    this.brain = new Brain();
+  }
+
+  playTurn(warrior) {
+    this.brain.process(warrior);
   }
 }
